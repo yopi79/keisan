@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>制作スケジュール逆算計算機</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 24px 16px;
+    color: #1a202c;
+  }
+  .container {
+    max-width: 1080px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    overflow: hidden;
+  }
+  header {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: #fff;
+    padding: 28px 32px;
+  }
+  header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  header p {
+    font-size: 13px;
+    opacity: 0.9;
+  }
+  .content {
+    padding: 28px 32px;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: end;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 10px;
+    margin-bottom: 24px;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+  }
+  input[type="date"], input[type="text"], input[type="number"] {
+    padding: 8px 12px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    background: #fff;
+    font-family: inherit;
+  }
+  input[type="date"]:focus, input[type="text"]:focus, input[type="number"]:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+  }
+  button {
+    padding: 9px 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: #6366f1;
+    color: #fff;
+  }
+  .btn-primary:hover { background: #4f46e5; }
+  .btn-secondary {
+    background: #e2e8f0;
+    color: #334155;
+  }
+  .btn-secondary:hover { background: #cbd5e1; }
+  .btn-danger {
+    background: #fee2e2;
+    color: #b91c1c;
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+  .btn-danger:hover { background: #fecaca; }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #334155;
+    margin: 24px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::before {
+    content: "";
+    width: 4px;
+    height: 16px;
+    background: #6366f1;
+    border-radius: 2px;
+  }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
+    background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 4px solid #6366f1;
+  }
+  .summary-card .label {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .summary-card .value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  .summary-card .sub {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 2px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  thead {
+    background: #f1f5f9;
+  }
+  th {
+    padding: 12px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  td {
+    padding: 12px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+    vertical-align: middle;
+  }
+  tbody tr:hover { background: #f8fafc; }
+  td input[type="text"] {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+  td input[type="number"] {
+    width: 70px;
+    padding: 6px 8px;
+    font-size: 13px;
+    text-align: center;
+  }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: #6366f1;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .date-cell {
+    font-variant-numeric: tabular-nums;
+    color: #334155;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .date-cell .weekday {
+    color: #94a3b8;
+    font-size: 11px;
+    margin-left: 4px;
+  }
+  .today-row {
+    background: #fef3c7 !important;
+  }
+  .release-row {
+    background: #dcfce7 !important;
+    font-weight: 700;
+  }
+  .release-row .phase-badge {
+    background: #16a34a;
+  }
+
+  .holidays-section {
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+    margin-top: 16px;
+  }
+  .holidays-section details summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+  }
+  .holidays-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .holiday-chip {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    color: #475569;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .holiday-chip button {
+    background: transparent;
+    color: #94a3b8;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1;
+  }
+  .custom-holiday-add {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .custom-holiday-add input { flex: 1; }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .warning {
+    background: #fef2f2;
+    border-left: 4px solid #ef4444;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #991b1b;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .warning.show { display: block; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .container { box-shadow: none; }
+    .controls, .actions, .holidays-section, button { display: none !important; }
+    header { background: #4f46e5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @media (max-width: 640px) {
+    .content { padding: 20px 16px; }
+    th, td { padding: 8px 6px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📅 制作スケジュール逆算計算機</h1>
+    <p>リリース日から営業日ベースで逆算してスケジュールを自動計算（土日祝除外）</p>
+  </header>
+
+  <div class="content">
+    <div class="controls">
+      <div class="field">
+        <label for="releaseDate">🎯 リリース日（公開日）</label>
+        <input type="date" id="releaseDate">
+      </div>
+      <div class="field">
+        <label for="projectName">案件名（任意）</label>
+        <input type="text" id="projectName" placeholder="例: トップページリニューアル">
+      </div>
+      <button class="btn-primary" onclick="calculate()">再計算</button>
+      <button class="btn-secondary" onclick="resetPhases()">工程をデフォルトに戻す</button>
+    </div>
+
+    <div id="warning" class="warning"></div>
+
+    <div class="section-title">サマリー</div>
+    <div class="summary" id="summary"></div>
+
+    <div class="section-title">工程一覧（日数を変更すると自動で再計算）</div>
+    <table id="scheduleTable">
+      <thead>
+        <tr>
+          <th style="width:40px;">#</th>
+          <th>工程名</th>
+          <th style="width:90px;">営業日数</th>
+          <th>開始日</th>
+          <th>完了日</th>
+          <th style="width:60px;"></th>
+        </tr>
+      </thead>
+      <tbody id="phaseBody"></tbody>
+    </table>
+
+    <div class="actions">
+      <button class="btn-secondary" onclick="addPhase()">+ 工程を追加</button>
+      <button class="btn-secondary" onclick="window.print()">🖨 印刷・PDF保存</button>
+      <button class="btn-secondary" onclick="copyAsText()">📋 テキストでコピー</button>
+      <button class="btn-secondary" onclick="exportCSV()">⬇ CSVダウンロード</button>
+    </div>
+
+    <div class="holidays-section">
+      <details>
+        <summary>📆 除外する休日（土日＋日本の祝日。カスタム休日も追加可能）</summary>
+        <div id="holidaysList" class="holidays-list"></div>
+        <div class="custom-holiday-add">
+          <input type="date" id="customHolidayDate">
+          <input type="text" id="customHolidayName" placeholder="休日名（例: 夏季休暇）">
+          <button class="btn-secondary" onclick="addCustomHoliday()">追加</button>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========= 日本の祝日（2025〜2027） =========
+const JP_HOLIDAYS = {
+  // 2025
+  "2025-01-01": "元日", "2025-01-13": "成人の日", "2025-02-11": "建国記念の日",
+  "2025-02-23": "天皇誕生日", "2025-02-24": "振替休日", "2025-03-20": "春分の日",
+  "2025-04-29": "昭和の日", "2025-05-03": "憲法記念日", "2025-05-04": "みどりの日",
+  "2025-05-05": "こどもの日", "2025-05-06": "振替休日", "2025-07-21": "海の日",
+  "2025-08-11": "山の日", "2025-09-15": "敬老の日", "2025-09-23": "秋分の日",
+  "2025-10-13": "スポーツの日", "2025-11-03": "文化の日", "2025-11-23": "勤労感謝の日",
+  "2025-11-24": "振替休日",
+  // 2026
+  "2026-01-01": "元日", "2026-01-12": "成人の日", "2026-02-11": "建国記念の日",
+  "2026-02-23": "天皇誕生日", "2026-03-20": "春分の日", "2026-04-29": "昭和の日",
+  "2026-05-03": "憲法記念日", "2026-05-04": "みどりの日", "2026-05-05": "こどもの日",
+  "2026-05-06": "振替休日", "2026-07-20": "海の日", "2026-08-11": "山の日",
+  "2026-09-21": "敬老の日", "2026-09-22": "国民の休日", "2026-09-23": "秋分の日",
+  "2026-10-12": "スポーツの日", "2026-11-03": "文化の日", "2026-11-23": "勤労感謝の日",
+  // 2027
+  "2027-01-01": "元日", "2027-01-11": "成人の日", "2027-02-11": "建国記念の日",
+  "2027-02-23": "天皇誕生日", "2027-03-21": "春分の日", "2027-03-22": "振替休日",
+  "2027-04-29": "昭和の日", "2027-05-03": "憲法記念日", "2027-05-04": "みどりの日",
+  "2027-05-05": "こどもの日", "2027-07-19": "海の日", "2027-08-11": "山の日",
+  "2027-09-20": "敬老の日", "2027-09-23": "秋分の日", "2027-10-11": "スポーツの日",
+  "2027-11-03": "文化の日", "2027-11-23": "勤労感謝の日"
+};
+
+let customHolidays = {}; // { "2026-08-12": "夏季休暇" }
+
+// ========= デフォルト工程 =========
+const DEFAULT_PHASES = [
+  { name: "要件定義・準備", days: 3 },
+  { name: "デザイン制作", days: 5 },
+  { name: "コーディング", days: 5 },
+  { name: "社内確認・チェック", days: 2 },
+  { name: "修正対応", days: 2 },
+  { name: "最終確認・公開準備", days: 1 }
+];
+let phases = JSON.parse(JSON.stringify(DEFAULT_PHASES));
+
+// ========= 日付ユーティリティ =========
+const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+function fmtDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+function fmtJP(d) {
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}`;
+}
+function parseDate(str) {
+  const [y, m, d] = str.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function isHoliday(d) {
+  const key = fmtDate(d);
+  const dow = d.getDay();
+  if (dow === 0 || dow === 6) return true;
+  if (JP_HOLIDAYS[key]) return true;
+  if (customHolidays[key]) return true;
+  return false;
+}
+function getHolidayName(d) {
+  const key = fmtDate(d);
+  return JP_HOLIDAYS[key] || customHolidays[key] || null;
+}
+function prevBusinessDay(d) {
+  const r = new Date(d);
+  r.setDate(r.getDate() - 1);
+  while (isHoliday(r)) r.setDate(r.getDate() - 1);
+  return r;
+}
+function isBusinessDay(d) { return !isHoliday(d); }
+
+// リリース日そのものも営業日である必要がある前提で、
+// 「完了日」から指定営業日数さかのぼって「開始日」を求める
+function subtractBusinessDays(endDate, businessDays) {
+  // endDate自体を1日としてカウント
+  const d = new Date(endDate);
+  let remaining = businessDays - 1;
+  while (remaining > 0) {
+    d.setDate(d.getDate() - 1);
+    if (isBusinessDay(d)) remaining--;
+  }
+  return d;
+}
+
+// ========= 描画 =========
+function renderPhases() {
+  const tbody = document.getElementById("phaseBody");
+  tbody.innerHTML = "";
+  phases.forEach((p, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><span class="phase-badge">${i + 1}</span></td>
+      <td><input type="text" value="${escapeHtml(p.name)}" onchange="updatePhase(${i}, 'name', this.value)"></td>
+      <td><input type="number" min="1" value="${p.days}" onchange="updatePhase(${i}, 'days', parseInt(this.value)||1)"></td>
+      <td class="date-cell" data-col="start-${i}">-</td>
+      <td class="date-cell" data-col="end-${i}">-</td>
+      <td><button class="btn-danger" onclick="removePhase(${i})">削除</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function updatePhase(i, key, val) {
+  phases[i][key] = val;
+  calculate();
+}
+function addPhase() {
+  phases.push({ name: "新しい工程", days: 1 });
+  renderPhases();
+  calculate();
+}
+function removePhase(i) {
+  if (phases.length <= 1) return;
+  phases.splice(i, 1);
+  renderPhases();
+  calculate();
+}
+function resetPhases() {
+  phases = JSON.parse(JSON.stringify(DEFAULT_PHASES));
+  renderPhases();
+  calculate();
+}
+
+function calculate() {
+  const releaseInput = document.getElementById("releaseDate").value;
+  const warning = document.getElementById("warning");
+  warning.classList.remove("show");
+  if (!releaseInput) return;
+
+  let release = parseDate(releaseInput);
+  // リリース日が休日ならアラート＋直前営業日に調整
+  if (!isBusinessDay(release)) {
+    const name = getHolidayName(release) || "土日";
+    const adjusted = prevBusinessDay(release);
+    warning.innerHTML = `⚠️ 指定されたリリース日（${fmtJP(release)}）は営業日ではありません（${name}）。スケジュールは直前営業日 <strong>${fmtJP(adjusted)}</strong> を完了日として逆算しています。`;
+    warning.classList.add("show");
+    release = adjusted;
+  }
+
+  // 末尾の工程から逆算
+  let currentEnd = new Date(release);
+  const results = [];
+  for (let i = phases.length - 1; i >= 0; i--) {
+    const days = Math.max(1, parseInt(phases[i].days) || 1);
+    const start = subtractBusinessDays(currentEnd, days);
+    results[i] = { start: new Date(start), end: new Date(currentEnd) };
+    // 次の工程(ひとつ前)の完了日は、この工程の開始日の1営業日前
+    currentEnd = prevBusinessDay(start);
+  }
+
+  // 描画
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  phases.forEach((p, i) => {
+    const r = results[i];
+    const startCell = document.querySelector(`[data-col="start-${i}"]`);
+    const endCell = document.querySelector(`[data-col="end-${i}"]`);
+    startCell.innerHTML = `${fmtJP(r.start)}<span class="weekday">(${WEEKDAYS[r.start.getDay()]})</span>`;
+    endCell.innerHTML = `${fmtJP(r.end)}<span class="weekday">(${WEEKDAYS[r.end.getDay()]})</span>`;
+    const tr = startCell.parentElement;
+    tr.classList.remove("today-row", "release-row");
+    if (i === phases.length - 1) tr.classList.add("release-row");
+    if (today >= r.start && today <= r.end) tr.classList.add("today-row");
+  });
+
+  // サマリー
+  const kickoff = results[0].start;
+  const totalBiz = phases.reduce((s, p) => s + (parseInt(p.days) || 0), 0);
+  const totalCal = Math.round((release - kickoff) / 86400000) + 1;
+  const daysUntilKickoff = Math.round((kickoff - today) / 86400000);
+  const summary = document.getElementById("summary");
+  summary.innerHTML = `
+    <div class="summary-card">
+      <div class="label">🚀 キックオフ（着手日）</div>
+      <div class="value">${fmtJP(kickoff)} (${WEEKDAYS[kickoff.getDay()]})</div>
+      <div class="sub">${daysUntilKickoff >= 0 ? `今日から${daysUntilKickoff}日後` : `${Math.abs(daysUntilKickoff)}日前に着手すべき`}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">🎯 リリース日</div>
+      <div class="value">${fmtJP(release)} (${WEEKDAYS[release.getDay()]})</div>
+      <div class="sub">${phases.length}工程</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">📊 総営業日数</div>
+      <div class="value">${totalBiz} 営業日</div>
+      <div class="sub">暦日換算 ${totalCal}日</div>
+    </div>
+  `;
+}
+
+// ========= 休日UI =========
+function renderHolidays() {
+  const list = document.getElementById("holidaysList");
+  list.innerHTML = "";
+  // 表示対象期間：今年＋来年の祝日のみ
+  const thisYear = new Date().getFullYear();
+  const allHolidays = { ...JP_HOLIDAYS, ...customHolidays };
+  const entries = Object.entries(allHolidays)
+    .filter(([k]) => {
+      const y = parseInt(k.split("-")[0]);
+      return y >= thisYear && y <= thisYear + 1;
+    })
+    .sort();
+  entries.forEach(([date, name]) => {
+    const chip = document.createElement("span");
+    chip.className = "holiday-chip";
+    const isCustom = !!customHolidays[date];
+    chip.innerHTML = `${date} ${escapeHtml(name)}${isCustom ? `<button onclick="removeCustomHoliday('${date}')" title="削除">×</button>` : ""}`;
+    list.appendChild(chip);
+  });
+}
+function addCustomHoliday() {
+  const date = document.getElementById("customHolidayDate").value;
+  const name = document.getElementById("customHolidayName").value.trim() || "カスタム休日";
+  if (!date) return;
+  customHolidays[date] = name;
+  document.getElementById("customHolidayDate").value = "";
+  document.getElementById("customHolidayName").value = "";
+  renderHolidays();
+  calculate();
+}
+function removeCustomHoliday(date) {
+  delete customHolidays[date];
+  renderHolidays();
+  calculate();
+}
+
+// ========= エクスポート =========
+function copyAsText() {
+  const release = document.getElementById("releaseDate").value;
+  const project = document.getElementById("projectName").value || "（案件名未設定）";
+  if (!release) { alert("リリース日を入力してください"); return; }
+  let txt = `【${project}】制作スケジュール\nリリース日: ${fmtJP(parseDate(release))}\n\n`;
+  phases.forEach((p, i) => {
+    const s = document.querySelector(`[data-col="start-${i}"]`).textContent;
+    const e = document.querySelector(`[data-col="end-${i}"]`).textContent;
+    txt += `${i+1}. ${p.name}（${p.days}営業日）  ${s} 〜 ${e}\n`;
+  });
+  navigator.clipboard.writeText(txt).then(() => {
+    alert("クリップボードにコピーしました");
+  });
+}
+function exportCSV() {
+  const release = document.getElementById("releaseDate").value;
+  if (!release) { alert("リリース日を入力してください"); return; }
+  const project = document.getElementById("projectName").value || "案件";
+  let csv = "\uFEFF工程No,工程名,営業日数,開始日,完了日\n";
+  phases.forEach((p, i) => {
+    const s = document.querySelector(`[data-col="start-${i}"]`).textContent;
+    const e = document.querySelector(`[data-col="end-${i}"]`).textContent;
+    csv += `${i+1},"${p.name}",${p.days},"${s}","${e}"\n`;
+  });
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `schedule_${project}_${release}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ========= 初期化 =========
+function init() {
+  // デフォルトで30日後を初期リリース日として設定
+  const d = new Date();
+  d.setDate(d.getDate() + 30);
+  document.getElementById("releaseDate").value = fmtDate(d);
+  document.getElementById("releaseDate").addEventListener("change", calculate);
+  renderPhases();
+  renderHolidays();
+  calculate();
+}
+init();
+</script>
+</body>
+</html>
